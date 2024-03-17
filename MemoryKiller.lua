@@ -1,6 +1,9 @@
 -- MemoryKiller
 -- Made by Sharpedge_Gaming
--- v1.0.1
+-- v.2.1
+
+local AceAddon = LibStub("AceAddon-3.0")
+MemoryKiller = MemoryKiller or {}
 
 local window = CreateFrame("Frame", "MemoryKillerWindow", UIParent, "BasicFrameTemplateWithInset")
 window:SetSize(400, 600)
@@ -55,21 +58,58 @@ scrollFrame:EnableMouseWheel(true)
 
 local function UpdateMemoryUsage()
     UpdateAddOnMemoryUsage()
-    local memoryInfo = "|cFF00FF00Addon Memory Usage:|r\n"
+    local totalMemoryUsage = 0
+    local memoryInfo = "\n|cFF00CCFFAddon Memory Usage:|r\n"
+
     for i = 1, GetNumAddOns() do
         local name, title, notes, loadable, reason, security, newVersion = GetAddOnInfo(i)
         local isEnabled = GetAddOnEnableState(UnitName("player"), i) > 0
         local enabledText = isEnabled and "|cFF00FF00Enabled|r" or "|cFFFF0000Disabled|r"
         local memoryUsage = GetAddOnMemoryUsage(i)
+        totalMemoryUsage = totalMemoryUsage + memoryUsage
         memoryInfo = memoryInfo .. format("%s (%s): |cFF99CCFF%.2f KB|r\n", title or name, enabledText, memoryUsage)
     end
+
+    memoryInfo = memoryInfo .. format("\n|cFF00CCFFTotal Memory Usage: %.2f KB|r", totalMemoryUsage)
+
+    if not content.text then
+        content.text = content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        content.text:SetJustifyH("LEFT")
+        content.text:SetWidth(content:GetWidth())
+        content.text:SetPoint("TOPLEFT", content, "TOPLEFT", 10, -10)
+    end
+
     content.text:SetText(memoryInfo)
+    local textHeight = content.text:GetStringHeight()
+    content:SetHeight(math.max(1500, textHeight))
 end
 
-content.text = content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-content.text:SetJustifyH("LEFT")
-content.text:SetWidth(content:GetWidth())
-content.text:SetPoint("TOPLEFT", content, "TOPLEFT", 10, -10)
+window:SetScript("OnShow", function()
+    scrollFrame:SetVerticalScroll(MemoryKillerScrollPosition or 0)
+    UpdateMemoryUsage()
+end)
+
+function MemoryKiller:EnableAutoRefresh()
+    if self.db.profile.autoRefresh then
+        if not self.refreshTimer then
+            self.refreshTimer = self:ScheduleRepeatingTimer("UpdateMemoryUsage", self.db.profile.refreshInterval)
+        end
+    else
+        if self.refreshTimer then
+            self:CancelTimer(self.refreshTimer)
+            self.refreshTimer = nil
+        end
+    end
+end
+
+local function CollectGarbage()
+    local beforeCollect = collectgarbage("count")
+    collectgarbage("collect")
+    local afterCollect = collectgarbage("count")
+    local memoryFreed = beforeCollect - afterCollect
+    print(format("|cFF00FF00Garbage collected. Memory freed: %.2f KB|r", memoryFreed / 1024))
+    UpdateMemoryUsage()
+end
 
 window:SetScript("OnShow", function()
     scrollFrame:SetVerticalScroll(MemoryKillerScrollPosition or 0)
@@ -95,8 +135,8 @@ refreshButton:SetScript("OnClick", UpdateMemoryUsage)
 
 -- Tooltip for Refresh Button
 refreshButton:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:AddLine("Refresh", 1, 1, 1)
+    GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+    GameTooltip:AddLine("|cFF00FF00Refresh", 1, 1, 1)
     GameTooltip:AddLine("Clicking this button updates the memory usage information for all addons. Use this to see current memory usage after making changes, like enabling/disabling addons or after a period of gameplay.", 1, 1, 1, true)
     GameTooltip:Show()
 end)
@@ -113,7 +153,7 @@ gcButton:SetScript("OnClick", CollectGarbage)
 -- Tooltip for Garbage Collection Button
 gcButton:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:AddLine("Collect Garbage", 1, 1, 1)
+    GameTooltip:AddLine("|cFF00FF00Collect Garbage", 1, 1, 1)
     GameTooltip:AddLine("Clicking this button updates the memory usage information for all addons. Use this to see current memory usage after making changes, like enabling/disabling addons or after a period of gameplay.", 1, 1, 1, true)
     GameTooltip:Show()
 end)
@@ -140,11 +180,15 @@ frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("PLAYER_LOGOUT")
 frame:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == "MemoryKiller" then
+        
         if MemoryKillerScrollPosition == nil then MemoryKillerScrollPosition = 0 end
+        
+        MemoryKillerMinimapSettings = MemoryKillerMinimapSettings or {}
     elseif event == "PLAYER_LOGOUT" then
-       
+                
     end
 end)
+
 
 
 
