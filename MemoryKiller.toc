@@ -1,7 +1,7 @@
-## Interface: 100206
+## Interface: 110002
 ## Title: MemoryKiller
 ## Author: Sharpedge_Gaming
-## Version: v.2.3
+## Version: v.2.4
 ## Notes: Optimize your WoW gameplay with MemoryKiller! Easily track and manage addon memory usage, free up memory on-demand, and customize your UI for peak performance.
 ## IconTexture: Interface\AddOns\MemoryKiller\Icon\Icon.tga
 ## SavedVariables: MemoryKillerScrollPosition, MemoryKillerMinimapSettings
