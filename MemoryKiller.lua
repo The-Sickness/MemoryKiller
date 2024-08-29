@@ -1,6 +1,6 @@
 -- MemoryKiller
 -- Made by Sharpedge_Gaming
--- v.2.3
+-- v.2.5
 
 local AceAddon = LibStub("AceAddon-3.0")
 MemoryKiller = MemoryKiller or {}
@@ -56,15 +56,19 @@ content:SetSize(380, 1500)
 scrollFrame:SetScrollChild(content)
 scrollFrame:EnableMouseWheel(true)
 
+
 local function UpdateMemoryUsage()
+    local GetNumAddOns = C_AddOns and C_AddOns.GetNumAddOns or GetNumAddOns
+    local GetAddOnInfo = C_AddOns and C_AddOns.GetAddOnInfo or GetAddOnInfo
+    local GetAddOnMemoryUsage = C_AddOns and C_AddOns.GetAddOnMemoryUsage or GetAddOnMemoryUsage
+
     UpdateAddOnMemoryUsage()
     local totalMemoryUsage = 0
     local memoryInfo = "\n|cFF00CCFFAddon Memory Usage:|r\n"
 
     for i = 1, GetNumAddOns() do
         local name, title, notes, loadable, reason, security, newVersion = GetAddOnInfo(i)
-        local isEnabled = GetAddOnEnableState(UnitName("player"), i) > 0
-        local enabledText = isEnabled and "|cFF00FF00Enabled|r" or "|cFFFF0000Disabled|r"
+        local enabledText = loadable and "|cFF00FF00Enabled|r" or "|cFFFF0000Disabled|r"
         local memoryUsage = GetAddOnMemoryUsage(i)
         totalMemoryUsage = totalMemoryUsage + memoryUsage
         memoryInfo = memoryInfo .. format("%s (%s): |cFF99CCFF%.2f KB|r\n", title or name, enabledText, memoryUsage)
@@ -84,9 +88,19 @@ local function UpdateMemoryUsage()
     content:SetHeight(math.max(1500, textHeight))
 end
 
-window:SetScript("OnShow", function()
-    scrollFrame:SetVerticalScroll(MemoryKillerScrollPosition or 0)
-    UpdateMemoryUsage()
+-- Event handler to ensure function availability
+local frame = CreateFrame("Frame")
+frame:RegisterEvent("ADDON_LOADED")
+frame:RegisterEvent("PLAYER_ENTERING_WORLD")  -- Registering additional event as fallback
+frame:SetScript("OnEvent", function(self, event, arg1)
+    if (event == "ADDON_LOADED" and arg1 == "MemoryKiller") or event == "PLAYER_ENTERING_WORLD" then
+        if MemoryKillerScrollPosition == nil then MemoryKillerScrollPosition = 0 end
+        MemoryKillerMinimapSettings = MemoryKillerMinimapSettings or {}
+
+        UpdateMemoryUsage()
+    elseif event == "PLAYER_LOGOUT" then
+       
+    end
 end)
 
 function MemoryKiller:EnableAutoRefresh()
