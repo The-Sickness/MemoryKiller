@@ -1,6 +1,6 @@
 -- MemoryKiller
 -- Made by Sharpedge_Gaming
--- v.2.5
+-- v3.4 - 12.1.0
 
 local AceAddon = LibStub("AceAddon-3.0")
 MemoryKiller = MemoryKiller or {}
